@@ -97,6 +97,42 @@ class MemInstr(Union):
     def __str__(self):
         return serialize_instr(self)
 
+    def set_size(self, type, value):
+        valid = type == "x" or type == "y"
+        assert valid
+        if type == "x":
+            self.field.x_size = value
+        else:
+            self.field.y_size = value
+
+    def set_pad(self, type, value):
+        valid = type == "x0" or type == "y0" or type == "x1" or type == "y1"
+        assert valid
+        if type == "x0":
+            self.field.x_pad_0 = value
+        elif type == "y0":
+            self.field.y_pad_0 = value
+        elif type == "x1":
+            self.field.x_pad_1 = value
+        else:
+            self.field.y_pad_1 = value
+
+    def set_dep(self, type):
+        valid = type == "prev" or type == "next"
+        assert valid
+        if type == "prev":
+            self.field.push_prev_dep = 1
+        else:
+            self.field.push_next_dep = 1
+
+    def clear_dep(self, type):
+        valid = type == "prev" or type == "next"
+        assert valid
+        if type == "prev":
+            self.field.push_prev_dep = 0
+        else:
+            self.field.push_next_dep = 0
+
 
 class AluInstrBits(Structure):
     _pack_ = 1
@@ -134,6 +170,70 @@ class AluInstr(Union):
 
     def __str__(self):
         return serialize_instr(self)
+
+    def set_reset(self):
+        self.field.reset = 1
+
+    def clear_reset(self):
+        self.field.reset = 0
+
+    def set_use_imm(self):
+        self.field.reset = 1
+
+    def clear_use_imm(self):
+        self.field.reset = 0
+
+    def set_imm(self, value):
+        self.set_use_imm()
+        self.field.imm = value
+
+    def set_uop(self, type, value):
+        valid = type == "begin" or type == "end"
+        assert valid
+        if type == "begin":
+            self.field.uop_begin = value
+        else:
+            self.field.uop_end = value
+
+    def set_iter(self, type, value):
+        valid = type == "in" or type == "out"
+        assert valid
+        if type == "in":
+            self.field.push_prev_dep = value
+        else:
+            self.field.push_next_dep = value
+
+    def set_dst(self, type, value):
+        valid = type == "in" or type == "out"
+        assert valid
+        if type == "in":
+            self.field.push_prev_dep = value
+        else:
+            self.field.push_next_dep = value
+
+    def set_src(self, type, value):
+        valid = type == "in" or type == "out"
+        assert valid
+        if type == "in":
+            self.field.push_prev_dep = value
+        else:
+            self.field.push_next_dep = value
+
+    def set_dep(self, type):
+        valid = type == "prev" or type == "next"
+        assert valid
+        if type == "prev":
+            self.field.push_prev_dep = 1
+        else:
+            self.field.push_next_dep = 1
+
+    def clear_dep(self, type):
+        valid = type == "prev" or type == "next"
+        assert valid
+        if type == "prev":
+            self.field.push_prev_dep = 0
+        else:
+            self.field.push_next_dep = 0
 
 
 class GemInstrBits(Structure):
@@ -174,6 +274,60 @@ class GemInstr(Union):
     def __str__(self):
         return serialize_instr(self)
 
+    def set_reset(self):
+        self.field.reset = 1
+
+    def clear_reset(self):
+        self.field.reset = 0
+
+    def set_uop(self, type, value):
+        valid = type == "begin" or type == "end"
+        assert valid
+        if type == "begin":
+            self.field.uop_begin = value
+        else:
+            self.field.uop_end = value
+
+    def set_iter(self, type, value):
+        valid = type == "in" or type == "out"
+        assert valid
+        if type == "in":
+            self.field.push_prev_dep = value
+        else:
+            self.field.push_next_dep = value
+
+    def set_dst(self, type, value):
+        valid = type == "in" or type == "out"
+        assert valid
+        if type == "in":
+            self.field.push_prev_dep = value
+        else:
+            self.field.push_next_dep = value
+
+    def set_src(self, type, value):
+        valid = type == "in" or type == "out"
+        assert valid
+        if type == "in":
+            self.field.push_prev_dep = value
+        else:
+            self.field.push_next_dep = value
+
+    def set_dep(self, type):
+        valid = type == "prev" or type == "next"
+        assert valid
+        if type == "prev":
+            self.field.push_prev_dep = 1
+        else:
+            self.field.push_next_dep = 1
+
+    def clear_dep(self, type):
+        valid = type == "prev" or type == "next"
+        assert valid
+        if type == "prev":
+            self.field.push_prev_dep = 0
+        else:
+            self.field.push_next_dep = 0
+
 
 class Prog(object):
     def __init__(self, name):
@@ -182,3 +336,7 @@ class Prog(object):
 
     def add_instr(self, instr):
         self.body.append(instr)
+
+
+instr = AluInstr("add")
+print(instr)
