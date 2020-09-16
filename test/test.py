@@ -334,9 +334,27 @@ class Prog(object):
         self.name = name
         self.body = []
 
+    def __str__(self):
+        body = ["{}".format(instr) for instr in self.body]
+        return "\n".join(body)
+
     def add_instr(self, instr):
         self.body.append(instr)
 
 
-instr = AluInstr("add")
-print(instr)
+def create_prog(name):
+    load = MemInstr("load", "acc")
+    alu = AluInstr("add")
+    store = MemInstr("store", "out")
+    finish = GemInstr("finish")
+    prog = Prog(name)
+    prog.add_instr(load)
+    prog.add_instr(alu)
+    prog.add_instr(store)
+    prog.add_instr(finish)
+    return prog
+
+
+if __name__ == "__main__":
+    prog = create_prog("test")
+    print(prog)
