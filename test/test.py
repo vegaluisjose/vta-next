@@ -47,11 +47,13 @@ memory_type = {
 
 InstrBytes = c_uint8 * 16
 
+
 def serialize_instr(instr):
     x = list(bytes(instr.asbyte))
     x.reverse()
     y = ["{:02x}".format(i) for i in x]
     return "".join(y)
+
 
 class MemInstrBits(Structure):
     _pack_ = 1
@@ -76,6 +78,10 @@ class MemInstrBits(Structure):
 
 class MemInstr(Union):
     _fields_ = [("field", MemInstrBits), ("asbyte", InstrBytes)]
+
+    def __init__(self, op_type, mem_type):
+        self.field.opcode = opcode[op_type]
+        self.field.memory_type = memory_type[mem_type]
 
     def __str__(self):
         return serialize_instr(self)
@@ -103,11 +109,13 @@ class AluInstrBits(Structure):
         ("imm", c_uint64, width["imm"]),
     ]
 
+
 class AluInstr(Union):
     _fields_ = [("field", AluInstrBits), ("asbyte", InstrBytes)]
 
     def __str__(self):
         return serialize_instr(self)
+
 
 class Prog(object):
     def __init__(self, name):
@@ -117,13 +125,13 @@ class Prog(object):
     def add_instr(self, instr):
         self.body.append(instr)
 
+
 def load():
-    instr = MemInstr()
-    instr.field.opcode = opcode["load"]
-    instr.field.memory_type = memory_type["acc"]
+    instr = MemInstr("load", "acc")
     instr.field.dram_base = 0x82
     instr.field.y_size = 1
     instr.field.x_size = 1
     return instr
+
 
 print(load())
