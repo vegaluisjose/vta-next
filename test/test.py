@@ -1,3 +1,50 @@
+from ctypes import c_uint64, c_uint8, LittleEndianStructure, Union
+
+SPEC_WIDTH = {
+    "opcode": 3,
+    "pop_push": 1,
+    "memory_type": 2,
+    "sram_addr": 16,
+    "dram_addr": 32,
+    "size": 16,
+    "stride": 16,
+    "pad": 4,
+}
+
+class InstrBits(LittleEndianStructure):
+    _fields_ = [
+        ("opcode", c_uint64, SPEC_WIDTH["opcode"]),
+        ("pop_prev_dep", c_uint64, SPEC_WIDTH["pop_push"]),
+        ("pop_next_dep", c_uint64, SPEC_WIDTH["pop_push"]),
+        ("push_prev_dep", c_uint64, SPEC_WIDTH["pop_push"]),
+        ("push_next_dep", c_uint64, SPEC_WIDTH["pop_push"]),
+        ("memory_type", c_uint64, SPEC_WIDTH["memory_type"]),
+        ("sram_base", c_uint64, SPEC_WIDTH["sram_addr"]),
+        ("dram_base", c_uint64, SPEC_WIDTH["dram_addr"]),
+        ("y_size", c_uint64, SPEC_WIDTH["size"]),
+        ("x_size", c_uint64, SPEC_WIDTH["size"]),
+        ("x_stride", c_uint64, SPEC_WIDTH["stride"]),
+        ("y_pad_0", c_uint64, SPEC_WIDTH["pad"]),
+        ("y_pad_1", c_uint64, SPEC_WIDTH["pad"]),
+        ("x_pad_0", c_uint64, SPEC_WIDTH["pad"]),
+        ("x_pad_1", c_uint64, SPEC_WIDTH["pad"]),
+    ]
+
+
+class Instr(Union):
+    _fields_ = [("field", InstrBits), ("asbyte", c_uint64)]
+
+
+instr = Instr()
+instr.field.opcode = 0
+instr.field.memory_type = 3
+instr.field.dram_base = 0x82
+instr.y_size = 1
+instr.x_size = 1
+
+print(hex(instr.asbyte))
+
+
 # from collections import OrderedDict
 
 # class Field(object):
@@ -40,34 +87,3 @@
 
 
 # instr.debug()
-
-from ctypes import c_uint64, LittleEndianStructure, Union
-
-class InstrBits(LittleEndianStructure):
-    _fields_ = [
-        ("opcode", c_uint64, 3),
-        ("pop_prev_dep", c_uint64, 1),
-        ("pop_next_dep", c_uint64, 1),
-        ("push_prev_dep", c_uint64, 1),
-        ("push_next_dep", c_uint64, 1),
-        ("memory_type", c_uint64, 2),
-    ]
-
-class Instr(Union):
-    _fields_ = [("field", InstrBits), ("asbyte", c_uint64)]
-
-
-instr = Instr()
-print(instr.asbyte)
-instr.field.memory_type = 3
-print(hex(instr.asbyte))
-
-# flags = Flags()
-# flags.b.logout = 3
-
-# print(flags.asbyte)
-
-# print(flags.b.idle)
-# print(flags.b.suspend)
-# print(flags.b.userswitch)
-# print(flags.b.logout)
