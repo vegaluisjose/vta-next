@@ -323,6 +323,14 @@ class GemInstr(Union):
         else:
             self.field.src_factor_out = value
 
+    def set_wgt(self, type, value):
+        valid = type == "in" or type == "out"
+        assert valid
+        if type == "in":
+            self.field.wgt_factor_in = value
+        else:
+            self.field.wgt_factor_out = value
+
     def pop_dep(self, type):
         valid = type == "prev" or type == "next"
         assert valid
