@@ -2,6 +2,14 @@
 #include <vta/hw_spec.h>
 #include <stdio.h>
 
+void print_instr(void* buf, int num_instr) {
+    uint64_t* imem = reinterpret_cast<uint64_t*>(buf);
+    for (int i=0; i<num_instr; i++) {
+        printf("%016llx", imem[2*i+1]);
+        printf("%016llx\n", imem[2*i]);
+    }
+}
+
 int main() {
     uint32_t num_instr = 4;
     uint32_t num_bytes = 1024;
@@ -45,7 +53,7 @@ int main() {
     instr_mem[0].x_pad_1 = 0;
 
     instr_alu[1].opcode = VTA_OPCODE_ALU;
-    instr_alu[1].alu_opcode = VTA_ALU_OPCODE_SHR;
+    instr_alu[1].alu_opcode = VTA_ALU_OPCODE_ADD;
     instr_alu[1].uop_bgn = 0;
     instr_alu[1].uop_end = 1;
     instr_alu[1].use_imm = true;
@@ -83,6 +91,8 @@ int main() {
     instr_gem[3].pop_next_dep = 1;
     instr_gem[3].push_prev_dep = 0;
     instr_gem[3].push_next_dep = 0;
+
+    print_instr(instr_buf, num_instr);
 
     for (int i = 0; i < (VTA_ACC_ELEM_BYTES/4); i++) {
         printf("i[%02d]:%08x\n", i, mem32[i+(VTA_ACC_ELEM_BYTES/4)*inp_offset]);
