@@ -80,8 +80,16 @@ class MemInstr(Union):
     _fields_ = [("field", MemInstrBits), ("asbyte", InstrBytes)]
 
     def __init__(self, op_type, mem_type):
-        self.field.opcode = opcode[op_type]
-        self.field.memory_type = memory_type[mem_type]
+        try:
+            self.field.opcode = opcode[op_type]
+        except KeyError:
+            print("~~~>{} opcode does not exist".format(op_type))
+            raise
+        try:
+            self.field.memory_type = memory_type[mem_type]
+        except KeyError:
+            print("~~~>{} memory type does not exist".format(mem_type))
+            raise
 
     def __str__(self):
         return serialize_instr(self)
