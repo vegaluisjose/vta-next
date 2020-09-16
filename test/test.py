@@ -2,12 +2,10 @@ from ctypes import c_uint64, c_uint8, Structure, Union
 
 # uop_begin, uop_end and *_factor are derived from config
 width = {
+    "flag": 1,
     "opcode": 3,
     "alu_opcode": 2,
-    "use_imm": 1,
     "imm": 16,
-    "pop_push": 1,
-    "reset": 1,
     "memory_type": 2,
     "sram_addr": 16,
     "dram_addr": 32,
@@ -59,13 +57,13 @@ class MemInstrBits(Structure):
     _pack_ = 1
     _fields_ = [
         ("opcode", c_uint64, width["opcode"]),
-        ("pop_prev_dep", c_uint64, width["pop_push"]),
-        ("pop_next_dep", c_uint64, width["pop_push"]),
-        ("push_prev_dep", c_uint64, width["pop_push"]),
-        ("push_next_dep", c_uint64, width["pop_push"]),
+        ("pop_prev_dep", c_uint64, width["flag"]),
+        ("pop_next_dep", c_uint64, width["flag"]),
+        ("push_prev_dep", c_uint64, width["flag"]),
+        ("push_next_dep", c_uint64, width["flag"]),
         ("memory_type", c_uint64, width["memory_type"]),
-        ("sram_base", c_uint64, width["sram_addr"]),
-        ("dram_base", c_uint64, width["dram_addr"]),
+        ("sram_addr", c_uint64, width["sram_addr"]),
+        ("dram_addr", c_uint64, width["dram_addr"]),
         ("y_size", c_uint64, width["size"]),
         ("x_size", c_uint64, width["size"]),
         ("x_stride", c_uint64, width["stride"]),
@@ -97,6 +95,14 @@ class MemInstr(Union):
     def __str__(self):
         return serialize_instr(self)
 
+    def set_addr(self, type, value):
+        valid = type == "sram" or type == "dram"
+        assert valid
+        if type == "sram":
+            self.field.sram_addr = value
+        else:
+            self.field.dram_addr = value
+
     def set_size(self, type, value):
         valid = type == "x" or type == "y"
         assert valid
@@ -104,6 +110,11 @@ class MemInstr(Union):
             self.field.x_size = value
         else:
             self.field.y_size = value
+
+    def set_stride(self, type, value):
+        valid = type == "x"
+        assert valid
+        self.field.x_stride = value
 
     def set_pad(self, type, value):
         valid = type == "x0" or type == "y0" or type == "x1" or type == "y1"
@@ -117,7 +128,15 @@ class MemInstr(Union):
         else:
             self.field.y_pad_1 = value
 
-    def set_dep(self, type):
+    def pop_dep(self, type):
+        valid = type == "prev" or type == "next"
+        assert valid
+        if type == "prev":
+            self.field.pop_prev_dep = 1
+        else:
+            self.field.pop_next_dep = 1
+
+    def push_dep(self, type):
         valid = type == "prev" or type == "next"
         assert valid
         if type == "prev":
@@ -125,24 +144,16 @@ class MemInstr(Union):
         else:
             self.field.push_next_dep = 1
 
-    def clear_dep(self, type):
-        valid = type == "prev" or type == "next"
-        assert valid
-        if type == "prev":
-            self.field.push_prev_dep = 0
-        else:
-            self.field.push_next_dep = 0
-
 
 class AluInstrBits(Structure):
     _pack_ = 1
     _fields_ = [
         ("opcode", c_uint64, width["opcode"]),
-        ("pop_prev_dep", c_uint64, width["pop_push"]),
-        ("pop_next_dep", c_uint64, width["pop_push"]),
-        ("push_prev_dep", c_uint64, width["pop_push"]),
-        ("push_next_dep", c_uint64, width["pop_push"]),
-        ("reset", c_uint64, width["reset"]),
+        ("pop_prev_dep", c_uint64, width["flag"]),
+        ("pop_next_dep", c_uint64, width["flag"]),
+        ("push_prev_dep", c_uint64, width["flag"]),
+        ("push_next_dep", c_uint64, width["flag"]),
+        ("reset", c_uint64, width["flag"]),
         ("uop_begin", c_uint64, width["uop_begin"]),
         ("uop_end", c_uint64, width["uop_end"]),
         ("iter_out", c_uint64, width["iter"]),
@@ -152,7 +163,7 @@ class AluInstrBits(Structure):
         ("src_factor_out", c_uint64, width["src_factor"]),
         ("src_factor_in", c_uint64, width["src_factor"]),
         ("alu_opcode", c_uint64, width["alu_opcode"]),
-        ("use_imm", c_uint64, width["use_imm"]),
+        ("use_imm", c_uint64, width["flag"]),
         ("imm", c_uint64, width["imm"]),
     ]
 
@@ -177,14 +188,14 @@ class AluInstr(Union):
     def clear_reset(self):
         self.field.reset = 0
 
-    def set_use_imm(self):
-        self.field.reset = 1
+    def set_imm_flag(self):
+        self.field.use_imm = 1
 
-    def clear_use_imm(self):
-        self.field.reset = 0
+    def clear_imm_flag(self):
+        self.field.use_imm = 0
 
     def set_imm(self, value):
-        self.set_use_imm()
+        self.set_imm_flag()
         self.field.imm = value
 
     def set_uop(self, type, value):
@@ -199,27 +210,35 @@ class AluInstr(Union):
         valid = type == "in" or type == "out"
         assert valid
         if type == "in":
-            self.field.push_prev_dep = value
+            self.field.iter_in = value
         else:
-            self.field.push_next_dep = value
+            self.field.iter_out = value
 
     def set_dst(self, type, value):
         valid = type == "in" or type == "out"
         assert valid
         if type == "in":
-            self.field.push_prev_dep = value
+            self.field.dst_factor_in = value
         else:
-            self.field.push_next_dep = value
+            self.field.dst_factor_out = value
 
     def set_src(self, type, value):
         valid = type == "in" or type == "out"
         assert valid
         if type == "in":
-            self.field.push_prev_dep = value
+            self.field.src_factor_in = value
         else:
-            self.field.push_next_dep = value
+            self.field.src_factor_out = value
 
-    def set_dep(self, type):
+    def pop_dep(self, type):
+        valid = type == "prev" or type == "next"
+        assert valid
+        if type == "prev":
+            self.field.pop_prev_dep = 1
+        else:
+            self.field.pop_next_dep = 1
+
+    def push_dep(self, type):
         valid = type == "prev" or type == "next"
         assert valid
         if type == "prev":
@@ -227,24 +246,16 @@ class AluInstr(Union):
         else:
             self.field.push_next_dep = 1
 
-    def clear_dep(self, type):
-        valid = type == "prev" or type == "next"
-        assert valid
-        if type == "prev":
-            self.field.push_prev_dep = 0
-        else:
-            self.field.push_next_dep = 0
-
 
 class GemInstrBits(Structure):
     _pack_ = 1
     _fields_ = [
         ("opcode", c_uint64, width["opcode"]),
-        ("pop_prev_dep", c_uint64, width["pop_push"]),
-        ("pop_next_dep", c_uint64, width["pop_push"]),
-        ("push_prev_dep", c_uint64, width["pop_push"]),
-        ("push_next_dep", c_uint64, width["pop_push"]),
-        ("reset", c_uint64, width["reset"]),
+        ("pop_prev_dep", c_uint64, width["flag"]),
+        ("pop_next_dep", c_uint64, width["flag"]),
+        ("push_prev_dep", c_uint64, width["flag"]),
+        ("push_next_dep", c_uint64, width["flag"]),
+        ("reset", c_uint64, width["flag"]),
         ("uop_begin", c_uint64, width["uop_begin"]),
         ("uop_end", c_uint64, width["uop_end"]),
         ("iter_out", c_uint64, width["iter"]),
@@ -292,41 +303,41 @@ class GemInstr(Union):
         valid = type == "in" or type == "out"
         assert valid
         if type == "in":
-            self.field.push_prev_dep = value
+            self.field.iter_in = value
         else:
-            self.field.push_next_dep = value
+            self.field.iter_out = value
 
     def set_dst(self, type, value):
         valid = type == "in" or type == "out"
         assert valid
         if type == "in":
-            self.field.push_prev_dep = value
+            self.field.dst_factor_in = value
         else:
-            self.field.push_next_dep = value
+            self.field.dst_factor_out = value
 
     def set_src(self, type, value):
         valid = type == "in" or type == "out"
         assert valid
         if type == "in":
-            self.field.push_prev_dep = value
+            self.field.src_factor_in = value
         else:
-            self.field.push_next_dep = value
+            self.field.src_factor_out = value
 
-    def set_dep(self, type):
+    def pop_dep(self, type):
+        valid = type == "prev" or type == "next"
+        assert valid
+        if type == "prev":
+            self.field.pop_prev_dep = 1
+        else:
+            self.field.pop_next_dep = 1
+
+    def push_dep(self, type):
         valid = type == "prev" or type == "next"
         assert valid
         if type == "prev":
             self.field.push_prev_dep = 1
         else:
             self.field.push_next_dep = 1
-
-    def clear_dep(self, type):
-        valid = type == "prev" or type == "next"
-        assert valid
-        if type == "prev":
-            self.field.push_prev_dep = 0
-        else:
-            self.field.push_next_dep = 0
 
 
 class Prog(object):
@@ -347,6 +358,20 @@ def create_prog(name):
     alu = AluInstr("add")
     store = MemInstr("store", "out")
     finish = GemInstr("finish")
+    load.set_addr("dram", 130)
+    load.set_size("y", 1)
+    load.set_size("x", 1)
+    alu.set_uop("end", 1)
+    alu.set_imm(0)
+    alu.push_dep("next")
+    alu.set_iter("in", 1)
+    alu.set_iter("out", 1)
+    store.set_addr("dram", 513)
+    store.set_size("y", 1)
+    store.set_size("x", 1)
+    store.pop_dep("prev")
+    store.push_dep("prev")
+    finish.pop_dep("next")
     prog = Prog(name)
     prog.add_instr(load)
     prog.add_instr(alu)
