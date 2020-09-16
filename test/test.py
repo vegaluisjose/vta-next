@@ -81,14 +81,17 @@ class MemInstr(Union):
 
     def __init__(self, op_type, mem_type):
         try:
+            assert op_type != "gemm"
+            assert op_type != "finish"
+            assert op_type != "alu"
             self.field.opcode = opcode[op_type]
         except KeyError:
-            print("~~~>{} opcode does not exist".format(op_type))
+            print("~~~>{} operation is not supported".format(op_type))
             raise
         try:
             self.field.memory_type = memory_type[mem_type]
         except KeyError:
-            print("~~~>{} memory type does not exist".format(mem_type))
+            print("~~~>{} memory type is not supported".format(mem_type))
             raise
 
     def __str__(self):
@@ -121,6 +124,53 @@ class AluInstrBits(Structure):
 class AluInstr(Union):
     _fields_ = [("field", AluInstrBits), ("asbyte", InstrBytes)]
 
+    def __init__(self, op_type):
+        self.field.opcode = opcode["alu"]
+        try:
+            self.field.alu_opcode = alu_opcode[op_type]
+        except KeyError:
+            print("~~~>{} alu operation is not supported".format(op_type))
+            raise
+
+    def __str__(self):
+        return serialize_instr(self)
+
+
+class GemInstrBits(Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("opcode", c_uint64, width["opcode"]),
+        ("pop_prev_dep", c_uint64, width["pop_push"]),
+        ("pop_next_dep", c_uint64, width["pop_push"]),
+        ("push_prev_dep", c_uint64, width["pop_push"]),
+        ("push_next_dep", c_uint64, width["pop_push"]),
+        ("reset", c_uint64, width["reset"]),
+        ("uop_begin", c_uint64, width["uop_begin"]),
+        ("uop_end", c_uint64, width["uop_end"]),
+        ("iter_out", c_uint64, width["iter"]),
+        ("iter_in", c_uint64, width["iter"]),
+        ("dst_factor_out", c_uint64, width["dst_factor"]),
+        ("dst_factor_in", c_uint64, width["dst_factor"]),
+        ("src_factor_out", c_uint64, width["src_factor"]),
+        ("src_factor_in", c_uint64, width["src_factor"]),
+        ("wgt_factor_out", c_uint64, width["wgt_factor"]),
+        ("wgt_factor_in", c_uint64, width["wgt_factor"]),
+    ]
+
+
+class GemInstr(Union):
+    _fields_ = [("field", GemInstrBits), ("asbyte", InstrBytes)]
+
+    def __init__(self, op_type):
+        try:
+            assert op_type != "load"
+            assert op_type != "store"
+            assert op_type != "alu"
+            self.field.opcode = opcode[op_type]
+        except KeyError:
+            print("~~~>{} operation is not supported".format(op_type))
+            raise
+
     def __str__(self):
         return serialize_instr(self)
 
@@ -132,14 +182,3 @@ class Prog(object):
 
     def add_instr(self, instr):
         self.body.append(instr)
-
-
-def load():
-    instr = MemInstr("load", "acc")
-    instr.field.dram_base = 0x82
-    instr.field.y_size = 1
-    instr.field.x_size = 1
-    return instr
-
-
-print(load())
