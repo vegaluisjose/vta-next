@@ -1,6 +1,6 @@
-from ctypes import c_uint64, c_uint8, LittleEndianStructure, Union
+from ctypes import c_uint64, c_uint8, Structure, Union
 
-SPEC_WIDTH = {
+spec = {
     "opcode": 3,
     "pop_push": 1,
     "memory_type": 2,
@@ -11,39 +11,49 @@ SPEC_WIDTH = {
     "pad": 4,
 }
 
-class InstrBits(LittleEndianStructure):
+
+InstrBytes = c_uint8 * 16
+
+
+class InstrBits(Structure):
+    _pack_ = 1
     _fields_ = [
-        ("opcode", c_uint64, SPEC_WIDTH["opcode"]),
-        ("pop_prev_dep", c_uint64, SPEC_WIDTH["pop_push"]),
-        ("pop_next_dep", c_uint64, SPEC_WIDTH["pop_push"]),
-        ("push_prev_dep", c_uint64, SPEC_WIDTH["pop_push"]),
-        ("push_next_dep", c_uint64, SPEC_WIDTH["pop_push"]),
-        ("memory_type", c_uint64, SPEC_WIDTH["memory_type"]),
-        ("sram_base", c_uint64, SPEC_WIDTH["sram_addr"]),
-        ("dram_base", c_uint64, SPEC_WIDTH["dram_addr"]),
-        ("y_size", c_uint64, SPEC_WIDTH["size"]),
-        ("x_size", c_uint64, SPEC_WIDTH["size"]),
-        ("x_stride", c_uint64, SPEC_WIDTH["stride"]),
-        ("y_pad_0", c_uint64, SPEC_WIDTH["pad"]),
-        ("y_pad_1", c_uint64, SPEC_WIDTH["pad"]),
-        ("x_pad_0", c_uint64, SPEC_WIDTH["pad"]),
-        ("x_pad_1", c_uint64, SPEC_WIDTH["pad"]),
+        ("opcode", c_uint64, spec["opcode"]),
+        ("pop_prev_dep", c_uint64, spec["pop_push"]),
+        ("pop_next_dep", c_uint64, spec["pop_push"]),
+        ("push_prev_dep", c_uint64, spec["pop_push"]),
+        ("push_next_dep", c_uint64, spec["pop_push"]),
+        ("memory_type", c_uint64, spec["memory_type"]),
+        ("sram_base", c_uint64, spec["sram_addr"]),
+        ("dram_base", c_uint64, spec["dram_addr"]),
+        ("y_size", c_uint64, spec["size"]),
+        ("x_size", c_uint64, spec["size"]),
+        ("x_stride", c_uint64, spec["stride"]),
+        ("y_pad_0", c_uint64, spec["pad"]),
+        ("y_pad_1", c_uint64, spec["pad"]),
+        ("x_pad_0", c_uint64, spec["pad"]),
+        ("x_pad_1", c_uint64, spec["pad"]),
     ]
 
 
 class Instr(Union):
-    _fields_ = [("field", InstrBits), ("asbyte", c_uint64)]
+    _fields_ = [("field", InstrBits), ("asbyte", InstrBytes)]
+
+    def __str__(self):
+        x = list(bytes(self.asbyte))
+        x.reverse()
+        y = ["{:02x}".format(i) for i in x]
+        return "".join(y)
 
 
 instr = Instr()
 instr.field.opcode = 0
 instr.field.memory_type = 3
 instr.field.dram_base = 0x82
-instr.y_size = 1
-instr.x_size = 1
+instr.field.y_size = 1
+instr.field.x_size = 1
 
-print(hex(instr.asbyte))
-
+print(instr)
 
 # from collections import OrderedDict
 
