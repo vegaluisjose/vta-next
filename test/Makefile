@@ -1,5 +1,5 @@
-TVM_DIR = $(abspath ..)/3rdparty/incubator-tvm
-VTA_DIR = $(TVM_DIR)/3rdparty/vta-hw
+TVM_DIR = $(abspath ..)/tvm
+VTA_DIR = $(abspath ..)/tvm-vta
 DMLC_DIR = $(TVM_DIR)/3rdparty/dmlc-core
 DLPACK_DIR = $(TVM_DIR)/3rdparty/dlpack
 
@@ -20,20 +20,6 @@ test: test.cc
 	$(VTA_FILES) \
 	$< \
 	-o $@ \
-	-I$(VTA_DIR)/include \
-	-I$(VTA_DIR)/src/vmem \
-	-I$(TVM_DIR)/include \
-	-I$(DMLC_DIR)/include \
-	-I$(DLPACK_DIR)/include
-
-lib.so:
-	g++ \
-	-std=c++14 \
-	-fpic \
-	-shared \
-	-o $@ \
-	$(VTA_DEFS) \
-	$(VTA_FILES) \
 	-I$(VTA_DIR)/include \
 	-I$(VTA_DIR)/src/vmem \
 	-I$(TVM_DIR)/include \
